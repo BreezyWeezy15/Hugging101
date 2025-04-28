@@ -3,6 +3,8 @@ package com.gemini.tool
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
@@ -12,6 +14,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.ProgressBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
@@ -50,41 +53,41 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowContentAccess = true
         webSettings.loadWithOverviewMode = true
         webSettings.useWideViewPort = true
+        
 
-        webView.isFocusable = true
-        webView.isFocusableInTouchMode = true
-        webView.requestFocus()
-
-        // 🌐 WebView Client (for handling inside navigation)
+        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                return false  // Allow WebView to load the URL inside the app
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                progressBar.visibility = View.VISIBLE
+
             }
 
             override fun onPageFinished(view: WebView, url: String) {
-                // 🧹 Remove header and auto-scroll input field
-                view.evaluateJavascript(
-                    """
-                    (function() {
-                        var header = document.querySelector('header');
-                        if (header) header.style.display = 'none';
+                super.onPageFinished(view, url)
+                progressBar.visibility = View.GONE
 
-                        var input = document.getElementById('chat_input');
-                        if (input) {
-                            input.addEventListener('focus', function() {
-                                setTimeout(function() {
-                                    window.scrollTo(0, input.offsetTop - 150);
-                                }, 300);
-                            });
-                        }
-                    })();
-                    """.trimIndent(),
+                webView.evaluateJavascript(
+                    """
+            (function() {
+                var header = document.querySelector('header');
+                if (header) header.style.display = 'none';
+
+                var input = document.getElementById('chat_input');
+                if (input) {
+                    input.addEventListener('focus', function() {
+                        setTimeout(function() {
+                            window.scrollTo(0, input.offsetTop - 150);
+                        }, 0);
+                    });
+                }
+            })();
+            """.trimIndent(),
                     null
                 )
+
             }
         }
-
-        // 📂 WebChromeClient for File Uploads
         webView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView?,
@@ -96,31 +99,13 @@ class MainActivity : AppCompatActivity() {
 
                 val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*" // Accept any file type; change to "application/pdf" for PDFs only
+                    type = "application/pdf"
                 }
                 fileChooserLauncher.launch(Intent.createChooser(intent, "Select File"))
                 return true
             }
         }
-
-        // 🌍 Load website
         webView.loadUrl("https://huggingface.co/spaces/openfree/PDF-RAG")
 
-        // 🆙 Push WebView when Keyboard opens
-        val rootView = findViewById<View>(R.id.main)
-        rootView.viewTreeObserver.addOnGlobalLayoutListener {
-            val rect = Rect()
-            rootView.getWindowVisibleDisplayFrame(rect)
-            val screenHeight = rootView.rootView.height
-            val keypadHeight = screenHeight - rect.bottom
-
-            if (keypadHeight > screenHeight * 0.15) {
-                // Keyboard is open → Scroll to show chat input
-                webView.evaluateJavascript(
-                    "document.getElementById('chat_input')?.scrollIntoView({behavior: 'smooth', block: 'center'});",
-                    null
-                )
-            }
-        }
     }
 }
