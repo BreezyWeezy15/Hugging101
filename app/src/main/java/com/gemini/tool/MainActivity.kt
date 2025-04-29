@@ -8,6 +8,8 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -20,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var progressBar : ProgressBar
     private lateinit var webView: WebView
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
 
@@ -37,25 +40,29 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔥 Hide ActionBar and enable full-screen immersive mode
+
         supportActionBar?.hide()
         window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
 
         setContentView(R.layout.activity_main)
 
-        webView = findViewById(R.id.webView)
 
-        // 🛠 WebView Settings
+        val splashOverlay: View = findViewById(R.id.splashOverlay)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            splashOverlay.visibility = View.GONE
+        }, 5000)
+
+        webView = findViewById(R.id.webView)
+        progressBar = findViewById(R.id.progressBar)
+
         val webSettings = webView.settings
         webSettings.javaScriptEnabled = true
         webSettings.domStorageEnabled = true
         webSettings.allowFileAccess = true
         webSettings.allowContentAccess = true
-        webSettings.loadWithOverviewMode = true
-        webSettings.useWideViewPort = true
         
 
-        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
@@ -77,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                 if (input) {
                     input.addEventListener('focus', function() {
                         setTimeout(function() {
-                            window.scrollTo(0, input.offsetTop - 150);
+                            window.scrollTo(0, input.offsetTop - 250);
                         }, 0);
                     });
                 }
